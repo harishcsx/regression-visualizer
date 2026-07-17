@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic'; // Ensures this page doesn't statically 
 export default async function VisitorsPage() {
   let globalUniqueCount = 0;
   let visitors: any[] = [];
+  let dbError: string | null = null;
   
   try {
     const db = await getDb();
@@ -19,8 +20,9 @@ export default async function VisitorsPage() {
     // Get all visitors ordered by last_visit descending
     const visitorsResult = await db.query('SELECT * FROM visitors ORDER BY last_visit DESC');
     visitors = visitorsResult.rows;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Could not fetch visitors from Postgres:", err);
+    dbError = err.message || String(err);
   }
 
   return (
@@ -49,6 +51,14 @@ export default async function VisitorsPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
         
+        {dbError && (
+          <div style={{ padding: '16px', background: 'rgba(255, 0, 0, 0.1)', border: '1px solid red', color: 'red', fontFamily: 'var(--font-mono)' }}>
+            <strong>DATABASE CONNECTION ERROR:</strong> {dbError}
+            <br/><br/>
+            Check your Vercel Environment Variables. Make sure DATABASE_URL is set correctly and you have redeployed.
+          </div>
+        )}
+
         {/* Global Stats */}
         <div className="sci-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
