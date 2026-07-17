@@ -1,29 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { UAParser } from 'ua-parser-js';
-import fs from 'fs/promises';
-import path from 'path';
-
-const DATA_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'visitors.json');
-
-// Helper to ensure the file and directory exist
-async function initDataFile() {
-  try {
-    await fs.mkdir(path.dirname(DATA_FILE_PATH), { recursive: true });
-    try {
-      await fs.access(DATA_FILE_PATH);
-    } catch {
-      await fs.writeFile(DATA_FILE_PATH, JSON.stringify({ globalUniqueCount: 0, visitors: [] }, null, 2));
-    }
-  } catch (error) {
-    console.error('Error initializing data file:', error);
-  }
-}
+import { getDb } from '@/utils/db';
 
 export async function GET(request: NextRequest) {
   try {
-    await initDataFile();
-    const data = JSON.parse(await fs.readFile(DATA_FILE_PATH, 'utf-8'));
+    const db = await getDb();
 
     // Check for existing visitor cookie
     let visitorId = request.cookies.get('visitor_id')?.value;
@@ -42,29 +24,25 @@ export async function GET(request: NextRequest) {
       ? `${result.device.vendor} ${result.device.model}` 
       : `${result.browser.name || 'Unknown Browser'} on ${result.os.name || 'Unknown OS'}`;
 
-    // Find visitor in data
-    let visitorIndex = data.visitors.findIndex((v: any) => v.id === visitorId);
-
-    if (visitorIndex === -1) {
-      // First time this ID is seen in the database (even if cookie existed but DB was cleared)
-      data.globalUniqueCount += 1;
-      data.visitors.push({
-        id: visitorId,
-        deviceName: deviceName.trim(),
-        visitCount: 1,
-        lastVisit: new Date().toISOString()
-      });
-      isNewVisitor = true; // Force cookie reset if DB was cleared
-    } else {
-      // Returning visitor
-      data.visitors[visitorIndex].visitCount += 1;
-      data.visitors[visitorIndex].lastVisit = new Date().toISOString();
-      // Optionally update device name if they switched browsers but kept the cookie?
-      // For now, keep the original or update it
-      data.visitors[visitorIndex].deviceName = deviceName.trim();
+    // Upsert visitor logic
+    const upsertQuery = `
+      INSERT INTO visitors (id, device_name, visit_count, last_visit)
+      VALUES ($1, $2, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE 
+      SET 
+        visit_count = visitors.visit_count + 1,
+        last_visit = CURRENT_TIMESTAMP,
+        device_name = $2
+      RETURNING xmax;
+    `;
+    
+    const res = await db.query(upsertQuery, [visitorId, deviceName.trim()]);
+    
+    // In PostgreSQL, xmax is 0 if it was an insert, and non-zero if it was an update.
+    // However, since we might just rely on the cookie presence to know if it's new:
+    if (res.rowCount && res.rows[0].xmax === '0') {
+       isNewVisitor = true;
     }
-
-    await fs.writeFile(DATA_FILE_PATH, JSON.stringify(data, null, 2));
 
     const response = NextResponse.json({ success: true, isNewVisitor });
     
@@ -80,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Error tracking visitor:', error);
+    console.error('Error tracking visitor in DB:', error);
     return NextResponse.json({ success: false, error: 'Failed to track' }, { status: 500 });
   }
 }

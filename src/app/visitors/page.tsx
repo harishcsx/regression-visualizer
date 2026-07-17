@@ -1,25 +1,27 @@
 import React from 'react';
-import fs from 'fs/promises';
-import path from 'path';
 import { Users, Server, HardDrive, Clock, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { getDb } from '@/utils/db';
 
 export const dynamic = 'force-dynamic'; // Ensures this page doesn't statically cache
 
 export default async function VisitorsPage() {
-  const dataPath = path.join(process.cwd(), 'src', 'data', 'visitors.json');
-  
-  let visitorData = { globalUniqueCount: 0, visitors: [] };
+  let globalUniqueCount = 0;
+  let visitors: any[] = [];
   
   try {
-    const fileContent = await fs.readFile(dataPath, 'utf-8');
-    visitorData = JSON.parse(fileContent);
+    const db = await getDb();
+    
+    // Get total unique count
+    const countResult = await db.query('SELECT COUNT(*) as total FROM visitors');
+    globalUniqueCount = parseInt(countResult.rows[0].total, 10);
+    
+    // Get all visitors ordered by last_visit descending
+    const visitorsResult = await db.query('SELECT * FROM visitors ORDER BY last_visit DESC');
+    visitors = visitorsResult.rows;
   } catch (err) {
-    console.error("Could not read visitors.json, it might not exist yet.");
+    console.error("Could not fetch visitors from Postgres:", err);
   }
-
-  // Sort visitors by most recent
-  visitorData.visitors.sort((a: any, b: any) => new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime());
 
   return (
     <div className="container" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}>
@@ -37,7 +39,7 @@ export default async function VisitorsPage() {
         <div>
           <h1 className="text-gradient dashboard-title" style={{ background: 'linear-gradient(135deg, var(--accent-danger), var(--accent-tertiary))', WebkitBackgroundClip: 'text', textShadow: '0 0 20px rgba(255, 51, 102, 0.3)' }}>NETWORK_ANALYTICS</h1>
           <div className="dashboard-subtitle">
-            <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}><Activity size={12} /> TRAFFIC_LOGS</span>
+            <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}><Activity size={12} /> TRAFFIC_LOGS (PG_MODE)</span>
             <Link href="/" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'var(--font-mono)', textDecoration: 'none' }}>
               &lt; RETURN_TO_DASHBOARD
             </Link>
@@ -59,7 +61,7 @@ export default async function VisitorsPage() {
             </p>
           </div>
           <div className="mono-text" style={{ fontSize: '42px', color: 'var(--accent-primary)', fontWeight: 'bold', textShadow: '0 0 15px rgba(0,255,204,0.4)' }}>
-            {visitorData.globalUniqueCount}
+            {globalUniqueCount}
           </div>
         </div>
 
@@ -81,17 +83,17 @@ export default async function VisitorsPage() {
                 </tr>
               </thead>
               <tbody>
-                {visitorData.visitors.length === 0 ? (
+                {visitors.length === 0 ? (
                   <tr>
                     <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>[ NO DATA LOGGED ]</td>
                   </tr>
                 ) : (
-                  visitorData.visitors.map((visitor: any) => (
+                  visitors.map((visitor: any) => (
                     <tr key={visitor.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
                       <td style={{ padding: '12px', color: 'var(--text-main)' }}>{visitor.id.split('-')[0]}***</td>
-                      <td style={{ padding: '12px', color: 'var(--accent-primary)' }}>{visitor.deviceName}</td>
-                      <td style={{ padding: '12px', color: 'var(--accent-secondary)', textAlign: 'center', fontWeight: 'bold' }}>{visitor.visitCount}</td>
-                      <td style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>{new Date(visitor.lastVisit).toLocaleString()}</td>
+                      <td style={{ padding: '12px', color: 'var(--accent-primary)' }}>{visitor.device_name}</td>
+                      <td style={{ padding: '12px', color: 'var(--accent-secondary)', textAlign: 'center', fontWeight: 'bold' }}>{visitor.visit_count}</td>
+                      <td style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>{new Date(visitor.last_visit).toLocaleString()}</td>
                     </tr>
                   ))
                 )}
