@@ -1,14 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { RegressionResult } from '../utils/regression';
-import { Terminal } from 'lucide-react';
+import { Terminal, Target } from 'lucide-react';
 
 interface MetricsPanelProps {
   regression: RegressionResult;
 }
 
 export default function MetricsPanel({ regression }: MetricsPanelProps) {
+  const [customX, setCustomX] = useState<string>('0');
+  
+  const parsedX = parseFloat(customX) || 0;
+  const predictedY = (regression.slope * parsedX) + regression.intercept;
+
   const metrics = [
     {
       label: 'SYS.EQUATION',
@@ -53,6 +58,45 @@ export default function MetricsPanel({ regression }: MetricsPanelProps) {
         <Terminal size={20} color="var(--accent-tertiary)" />
         DIAGNOSTIC_METRICS
       </h2>
+      
+      {/* Dynamic Predictor Tool */}
+      <div style={{
+        background: 'rgba(0, 255, 204, 0.05)',
+        border: '1px solid var(--accent-primary)',
+        borderRadius: '4px',
+        padding: '16px',
+        marginBottom: '20px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-primary)' }} />
+        <h3 className="mono-text" style={{ fontSize: '14px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <Target size={16} /> LIVE_PREDICTOR_MODULE
+        </h3>
+        
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            <label className="mono-text" style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>INPUT: VAR_X</label>
+            <input
+              type="number"
+              className="input-sci"
+              value={customX}
+              onChange={(e) => setCustomX(e.target.value)}
+              style={{ background: 'rgba(0,0,0,0.6)', borderColor: 'var(--accent-primary)' }}
+            />
+          </div>
+          
+          <div style={{ paddingBottom: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>=&gt;</div>
+          
+          <div style={{ flex: 1.5, background: 'rgba(0,0,0,0.8)', padding: '10px 15px', border: '1px solid var(--panel-border)', borderRight: '2px solid var(--accent-tertiary)' }}>
+            <label className="mono-text" style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>OUTPUT: Y_PREDICTED</label>
+            <div className="mono-text" style={{ fontSize: '20px', color: 'var(--accent-tertiary)', fontWeight: '600' }}>
+              {predictedY.toFixed(4)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ overflowY: 'auto', flex: 1, paddingRight: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {metrics.map((metric, i) => (
           <div key={i} style={{ 
