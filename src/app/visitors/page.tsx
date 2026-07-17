@@ -103,7 +103,7 @@ export default async function VisitorsPage() {
                       <td style={{ padding: '12px', color: 'var(--text-main)' }}>{visitor.id.split('-')[0]}***</td>
                       <td style={{ padding: '12px', color: 'var(--accent-primary)' }}>{visitor.device_name}</td>
                       <td style={{ padding: '12px', color: 'var(--accent-secondary)', textAlign: 'center', fontWeight: 'bold' }}>{visitor.visit_count}</td>
-                      <td style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>{new Date(visitor.last_visit).toLocaleString()}</td>
+                      <td style={{ padding: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>{new Date(visitor.last_visit).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'medium' })}</td>
                     </tr>
                   ))
                 )}
