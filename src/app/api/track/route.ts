@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       ? `${result.device.vendor} ${result.device.model}` 
       : `${result.browser.name || 'Unknown Browser'} on ${result.os.name || 'Unknown OS'}`;
 
-    // Upsert visitor logic
+    // Standard, foolproof UPSERT
     const upsertQuery = `
       INSERT INTO visitors (id, device_name, visit_count, last_visit)
       VALUES ($1, $2, 1, CURRENT_TIMESTAMP)
@@ -32,17 +32,10 @@ export async function GET(request: NextRequest) {
       SET 
         visit_count = visitors.visit_count + 1,
         last_visit = CURRENT_TIMESTAMP,
-        device_name = $2
-      RETURNING xmax;
+        device_name = EXCLUDED.device_name;
     `;
     
-    const res = await db.query(upsertQuery, [visitorId, deviceName.trim()]);
-    
-    // In PostgreSQL, xmax is 0 if it was an insert, and non-zero if it was an update.
-    // However, since we might just rely on the cookie presence to know if it's new:
-    if (res.rowCount && res.rows[0].xmax === '0') {
-       isNewVisitor = true;
-    }
+    await db.query(upsertQuery, [visitorId, deviceName.trim()]);
 
     const response = NextResponse.json({ success: true, isNewVisitor });
     
