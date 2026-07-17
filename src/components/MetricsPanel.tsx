@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { RegressionResult } from '../utils/regression';
-import { Terminal, Target } from 'lucide-react';
+import { Terminal, Target, FunctionSquare } from 'lucide-react';
+import { BlockMath } from 'react-katex';
 
 interface MetricsPanelProps {
   regression: RegressionResult;
@@ -14,22 +15,20 @@ export default function MetricsPanel({ regression }: MetricsPanelProps) {
   const parsedX = parseFloat(customX) || 0;
   const predictedY = (regression.slope * parsedX) + regression.intercept;
 
-  const metrics = [
-    {
-      label: 'SYS.EQUATION',
-      value: `y = ${regression.intercept.toFixed(4)} + ${regression.slope.toFixed(4)}x`,
-      desc: 'LINE OF BEST FIT [ MATHEMATICAL MODEL ]'
-    },
+  const modelParams = [
     {
       label: 'PRM.B0 [INTERCEPT]',
-      value: regression.intercept.toFixed(4),
+      latex: `B_0 = \\bar{y} - B_1\\bar{x} = ${regression.intercept.toFixed(4)}`,
       desc: 'EXPECTED VALUE OF Y_TARGET WHEN X_FEATURE = 0.'
     },
     {
       label: 'PRM.B1 [SLOPE]',
-      value: regression.slope.toFixed(4),
+      latex: `B_1 = \\frac{\\Sigma(x_i - \\bar{x})(y_i - \\bar{y})}{\\Sigma(x_i - \\bar{x})^2} = ${regression.slope.toFixed(4)}`,
       desc: 'STEEPNESS. ΔY FOR EVERY 1 UNIT INCREASE IN X.'
-    },
+    }
+  ];
+
+  const diagnosticMetrics = [
     {
       label: 'ERR.MSE [MEAN_SQUARED]',
       value: regression.mse.toFixed(4),
@@ -54,10 +53,6 @@ export default function MetricsPanel({ regression }: MetricsPanelProps) {
 
   return (
     <div className="sci-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', marginBottom: '24px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '16px' }}>
-        <Terminal size={20} color="var(--accent-tertiary)" />
-        DIAGNOSTIC_METRICS
-      </h2>
       
       {/* Dynamic Predictor Tool */}
       <div style={{
@@ -65,9 +60,10 @@ export default function MetricsPanel({ regression }: MetricsPanelProps) {
         border: '1px solid var(--accent-primary)',
         borderRadius: '4px',
         padding: '16px',
-        marginBottom: '20px',
+        marginBottom: '24px',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        flexShrink: 0
       }}>
         <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--accent-primary)' }} />
         <h3 className="mono-text" style={{ fontSize: '14px', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -97,32 +93,78 @@ export default function MetricsPanel({ regression }: MetricsPanelProps) {
         </div>
       </div>
 
-      <div style={{ overflowY: 'auto', flex: 1, paddingRight: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {metrics.map((metric, i) => (
-          <div key={i} style={{ 
-            padding: '12px 16px', 
-            background: 'rgba(0, 0, 0, 0.4)', 
-            border: '1px solid var(--panel-border)',
-            borderLeft: '3px solid var(--accent-tertiary)',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <strong className="mono-text" style={{ color: 'var(--text-main)', fontSize: '13px' }}>
-                {metric.label}
-              </strong>
-              <span className="mono-text" style={{ 
-                color: 'var(--text-highlight)', 
-                fontSize: '14px',
-                fontWeight: '600'
+      <div style={{ overflowY: 'auto', flex: 1, paddingRight: '12px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        
+        {/* Model Parameters (Slope, Intercept) */}
+        <div>
+          <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', marginBottom: '16px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px' }}>
+            <FunctionSquare size={18} color="var(--accent-secondary)" />
+            MODEL_PARAMETERS
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {modelParams.map((metric, i) => (
+              <div key={i} style={{ 
+                padding: '12px 16px', 
+                background: 'rgba(0, 0, 0, 0.4)', 
+                border: '1px solid var(--panel-border)',
+                borderLeft: '3px solid var(--accent-secondary)',
+                position: 'relative'
               }}>
-                {metric.value}
-              </span>
-            </div>
-            <p className="mono-text" style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)' }}>
-              &gt; {metric.desc}
-            </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong className="mono-text" style={{ color: 'var(--text-main)', fontSize: '13px' }}>
+                    {metric.label}
+                  </strong>
+                </div>
+                
+                {metric.latex && (
+                  <div style={{ color: 'var(--accent-primary)', background: 'rgba(0,0,0,0.5)', padding: '8px', borderRadius: '4px', margin: '8px 0', border: '1px solid rgba(0,255,204,0.1)' }}>
+                    <BlockMath math={metric.latex} />
+                  </div>
+                )}
+                
+                <p className="mono-text" style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)' }}>
+                  &gt; {metric.desc}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* Diagnostic Metrics */}
+        <div>
+          <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', marginBottom: '16px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '8px' }}>
+            <Terminal size={18} color="var(--accent-tertiary)" />
+            DIAGNOSTIC_METRICS
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {diagnosticMetrics.map((metric, i) => (
+              <div key={i} style={{ 
+                padding: '12px 16px', 
+                background: 'rgba(0, 0, 0, 0.4)', 
+                border: '1px solid var(--panel-border)',
+                borderLeft: '3px solid var(--accent-tertiary)',
+                position: 'relative'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong className="mono-text" style={{ color: 'var(--text-main)', fontSize: '13px' }}>
+                    {metric.label}
+                  </strong>
+                  <span className="mono-text" style={{ 
+                    color: 'var(--text-highlight)', 
+                    fontSize: '14px',
+                    fontWeight: '600'
+                  }}>
+                    {metric.value}
+                  </span>
+                </div>
+                
+                <p className="mono-text" style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)' }}>
+                  &gt; {metric.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
