@@ -22,14 +22,7 @@ export default function Home() {
 
   return (
     <div className="container" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}>
-      <header style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '20px', 
-        marginBottom: '40px',
-        borderBottom: '1px solid var(--panel-border)',
-        paddingBottom: '20px'
-      }}>
+      <header className="dashboard-header">
         <div style={{ 
           background: 'rgba(0, 255, 204, 0.1)', 
           padding: '16px', 
@@ -42,15 +35,15 @@ export default function Home() {
           <Activity color="var(--accent-primary)" size={32} />
         </div>
         <div>
-          <h1 className="text-gradient" style={{ margin: 0, fontSize: '36px', letterSpacing: '2px' }}>REGRESSION_TELEMETRY</h1>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px', alignItems: 'center' }}>
+          <h1 className="text-gradient dashboard-title">REGRESSION_TELEMETRY</h1>
+          <div className="dashboard-subtitle">
             <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}><Database size={12} /> SYS.DATA_ACTIVE</span>
             <span style={{ color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}><GitBranch size={12} /> MODEL.LINEAR_V1</span>
           </div>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '30px', minHeight: '600px' }}>
+      <div className="dashboard-grid">
         
         {/* Left Column: Data Entry */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>

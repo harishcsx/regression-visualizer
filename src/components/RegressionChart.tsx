@@ -57,7 +57,7 @@ export default function RegressionChart({ data, regression }: RegressionChartPro
 
   return (
     <div className="sci-panel" style={{ height: '400px', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '16px' }}>
+      <div className="chart-header">
         <h2 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', margin: 0 }}>
           <Network size={20} color="var(--accent-secondary)" />
           PLOT_VISUALIZATION
